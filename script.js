@@ -6,18 +6,22 @@ var board = [
   [0, 0, 0, 0, 0, 0, 0],
   [0, 0, 0, 0, 0, 0, 0]
 ]
+var q = 0
+var gameloop, sound1, sound2, humansound, aisound, menu1, getBeat
 var shows = []
 var runs1 = []
 var runs2 = []
+var drops = []
 var a = 0
 var win = []
 var dropTo = [5, 5, 5, 5, 5, 5, 5]
-var canvas,container
+var canvas, container
 var p1Turn = true
 var gameOver = false
 var winMessage = ''
 var screen = 0
 var depth = 5
+var logo
 var skillLevel = 'medium'
 var skillLevels = {
   easy: 4,
@@ -28,26 +32,27 @@ var l = 1
 var levels = ['easy', 'medium', 'hard']
 // var f
 function preload() {
-  f = loadFont('f.TTF', function () {
-    //console.log('loaded')
-  })
+  f = loadFont('f.ttf')
+  logo = loadImage('c4logo.gif')
+
+  sound1 = loadSound('s1.wav')
+  sound2 = loadSound('s2.wav')
+  humansound = loadSound('humansound.wav')
+  aisound = loadSound('aisound.wav')
+  getBeat = loadSound('getBeat.wav')
+  menu2 = loadSound('menu2.wav')
+  gameloop = loadSound('gameloop.wav')
 }
 
 
 function setup() {
-  container=document.getElementById('container')
-
+  container = document.getElementById('container')
+  gameloop.loop()
   canvas = createCanvas(700, 600)
   container.appendChild(canvas.elt)
   ellipseMode(CORNER)
   textFont(f)
-  // if (!p1Turn) {
-  //   aiMove()
 
-  //   drawBoard()
-
-  //   console.log(checkForWin())
-  // }
 
 
 }
@@ -96,37 +101,50 @@ function aiMove() {
   shows.push(new Show(row, col))
   if (row < 0) return
   board[row][col] = 2
+  aisound.play()
   dropTo[col]--
   drawBoard()
   if (checkForWin() != null) {
-    for (var cell of runs2) {
-      board[cell.row][cell.col] = 3
-    }
-    for (var cell of runs2) {
-      board[cell.row][cell.col] = 3
+
+    for (let c2 of runs2) {
+      board[c2.row][c2.col] = 3
     }
     gameOver = true
+    getBeat.play()
+    gameloop.stop()
+    //sound2.stop()
   }
   p1Turn = !p1Turn
 }
 
 
 function keyPressed() {
+  if (key == 'a' || key == 'A') {
+    menu1.play()
+  }
+  if (key == 'b' || key == 'b') {
+    menu2.play()
+  }
   if (screen == 0) {
     if (key == 'p' || key == 'P') {
       p1Turn = !p1Turn
     }
     if (keyCode == 32) {
       screen = 1
-      if (!p1Turn) setTimeout(function () { aiMove() }, 100);
+      gameloop.play()
+      menu2.stop()
+
+      if (!p1Turn) setTimeout(function () { aiMove() }, 500);
     }
   }
-  if(screen==1 && gameOver){
-    if(key=='r' ||key=='R'){
+  if (screen == 1 && gameOver) {
+    if (key == 'r' || key == 'R') {
       gameOver = false
-      screen = 0 
+      getBeat.stop()
+      menu2.loop()
+      screen = 0
       dropTo = [5, 5, 5, 5, 5, 5, 5]
-        board = [
+      board = [
         [0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0],
@@ -152,20 +170,30 @@ function keyPressed() {
   console.log(l, depth)
 }
 function mousePressed() {
-  
+
   if (gameOver == false && screen == 1) {
     if (p1Turn) {
       var col = floor(mouseX / 100)
       var row = dropTo[col]
       if (row < 0) return
+      //drops.push(new Drop(col))
       board[row][col] = 1
-      
+      console.log(drops)
+      humansound.play()
       dropTo[col]--
       drawBoard()
       var result = checkForWin()
-      if (result != null) {
 
+      if (result != null) {
+        //console.log(323232322323)
+        for (let c1 of runs1) {
+          board[c1.row][c1.col] = 3
+          //console.log('xxx')
+        }
+        gameloop.stop()
         gameOver = true
+
+        //sound2.stop()
         return
 
       }
@@ -195,7 +223,12 @@ function mousePressed() {
 
 function drawBoard() {
 
-
+  // if (gameOver) {
+  //   for (let c1 of runs1) {
+  //     board[c1.row][c1.col] = 3
+  //     console.log('xxx')
+  //   }
+  // }
   for (var row = 0; row < 6; row++) {
     for (var col = 0; col < 7; col++) {
       strokeWeight(5)
@@ -221,21 +254,20 @@ function drawBoard() {
       noFill()
       stroke(0)
       if (p1Turn && !gameOver) ellipse(c * 100, r * 100, 100, 100)
-      textSize(60)
+      textSize(40)
+      strokeWeight(2)
       stroke(0)
+      fill(130)
       strokeWeight(1)
-      fill(0, 44)
-      if (!p1Turn) text("AI thinking...", 90, 30)
-      fill(0)
-      noStroke()
-      //if (!gameOver) text(row + ':' + col, col * 100 + 50, row * 100 + 50)
-      fill(0)
-      strokeWeight(1)
+
+      if (!p1Turn) text("THINKING", 140, 30)
+
 
     }
   }
 }
 function menu() {
+
   background(40, 107, 214)
   //textFont(f)
   if (p1Turn) {
@@ -243,52 +275,80 @@ function menu() {
   } else {
     p = "AI"
   }
-  textSize(55)
+  imageMode(CENTER)
+  var scale = map(sin(q), -1, 1, 0.95, 1.05)
+  q = q + 0.1
+  image(logo, width / 2, 75, logo.width * scale, logo.height * scale)
+  textSize(50)
+  strokeWeight(4)
+  //stroke(2)
+  fill(0, 153, 102)
   textAlign(CENTER, CENTER)
-  text("PRESS SPACE TO START", width / 2, 80)
+  text("PRESS SPACE TO START", width / 2, 180)
   textSize(40)
-  text("START PLAYER is " + p, width / 2, 200)
+  text("START PLAYER is " + p, width / 2, 300)
   textSize(30)
-  text("CHANGE WITH P", width / 2, 250)
+  text("CHANGE WITH P", width / 2, 350)
   textSize(40)
-  text("AI LEVEL is " + levels[l], width / 2, 350)
+  text("AI LEVEL is " + levels[l].toUpperCase(), width / 2, 420)
   textSize(30)
-  text("CHANGE WITH L and R ARROWS", width / 2, 400)
+  text("CHANGE WITH L and R ARROWS", width / 2, 470)
+  textSize(23)
+  text("CLICK ON COLUMN TO DROP PIECE IN GAME MODE", width / 2, 230)
+  noFill()
+  stroke(0)
+  strokeWeight(4)
+  rect(0, 0, width, height)
 }
 
 function draw() {
+  strokeWeight(3)
+  stroke(0)
+  rect(0, 0, width, height)
   if (screen == 0) {
     menu()
   }
   if (screen == 1) {
-     for (var s of shows) {
+    for (var s of shows) {
       s.animate()
     }
     if (gameOver == true) {
       background(40, 107, 214, 33)
+
       drawBoard()
 
-      fill(0)
+      textSize(55)
+      strokeWeight(1)
+      stroke(2)
+      fill(0, 153, 102)
       textAlign(CENTER, CENTER)
       var tsize = map(sin(a), -1, 1, 90, 110)
       textSize(tsize)
       a += 0.1
       text(winMessage, width / 2, height / 2)
       textSize(50)
-      text('PRESS R TO RESTART',width / 2, height / 3)
-    
+      text('PRESS R TO RESTART', width / 2, height / 3)
+
     } else {
 
 
       background(40, 107, 214)
 
       drawBoard()
-      text(p1Turn,400,100)
+      //text(p1Turn,400,100)
     }
 
     for (var s of shows) {
       s.animate()
     }
+    for (var d of drops) {
+      d.show()
+      d.update()
+    }
+    strokeWeight(3)
+    noFill()
+    stroke(0)
+    rect(0, 0, width, height)
   }
 
 
