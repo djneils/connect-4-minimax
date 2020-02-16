@@ -6,6 +6,7 @@ var board = [
   [0, 0, 0, 0, 0, 0, 0],
   [0, 0, 0, 0, 0, 0, 0]
 ]
+var c=0
 var q = 0
 var gameloop, sound1, sound2, humansound, aisound, menu1, getBeat
 var shows = []
@@ -249,11 +250,12 @@ function drawBoard() {
         }
       }
       ellipse(col * 100, row * 100, 100, 100)
-      var c = floor(mouseX / 100)
-      var r = dropTo[c]
+      c = lerp(c,floor(mouseX / 100)*100,0.01)
+      console.log(c)
+      var r = dropTo[floor(mouseX / 100)]
       noFill()
       stroke(0)
-      if (p1Turn && !gameOver) ellipse(c * 100, r * 100, 100, 100)
+      if (p1Turn && !gameOver) ellipse(c , r * 100, 100, 100)
       textSize(40)
       strokeWeight(2)
       stroke(0)
